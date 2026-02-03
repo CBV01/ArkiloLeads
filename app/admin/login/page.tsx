@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2, Lock, ShieldAlert } from 'lucide-react'
 
-export default function AdminLoginPage() {
+function AdminLogin() {
     const [isLoading, setIsLoading] = React.useState(false)
     const [password, setPassword] = React.useState('')
     const router = useRouter()
@@ -104,5 +104,17 @@ export default function AdminLoginPage() {
                 </form>
             </Card>
         </div>
+    )
+}
+
+export default function AdminLoginPage() {
+    return (
+        <React.Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <AdminLogin />
+        </React.Suspense>
     )
 }

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Loader2, Mail, Lock, ShieldAlert } from 'lucide-react'
 
-export default function LoginPage() {
+function Login() {
     const [isLoading, setIsLoading] = React.useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -121,5 +121,17 @@ export default function LoginPage() {
                 </form>
             </Card>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <React.Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <Login />
+        </React.Suspense>
     )
 }
