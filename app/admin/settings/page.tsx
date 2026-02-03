@@ -10,7 +10,8 @@ import {
     ShieldCheck,
     Eye,
     EyeOff,
-    Loader2
+    Loader2,
+    Megaphone
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,12 +30,15 @@ export default function AdminSettings() {
 
     const [showPasskey, setShowPasskey] = React.useState(false)
     const [showAdminPass, setShowAdminPass] = React.useState(false)
+    const [broadcastMessage, setBroadcastMessage] = React.useState('')
+    const [isSavingBroadcast, setIsSavingBroadcast] = React.useState(false)
 
     React.useEffect(() => {
         fetch('/api/admin/settings')
             .then(res => res.json())
             .then(data => {
                 setPasskey(data.passkey || '')
+                setBroadcastMessage(data.broadcast || '')
                 setAdminPassword(data.adminPassword || 'admin123')
                 setAdminDetails({
                     name: data.admin?.name || 'Admin',
@@ -87,6 +91,35 @@ export default function AdminSettings() {
             if (res.ok) toast.success('Admin details updated')
         } finally {
             setIsSavingAdmin(false)
+        }
+    }
+
+    const handleUpdateBroadcast = async (e: React.FormEvent) => {
+        e.preventDefault()
+        console.log('Starting broadcast update with message:', broadcastMessage)
+        setIsSavingBroadcast(true)
+
+        try {
+            const res = await fetch('/api/admin/settings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'broadcast', message: broadcastMessage })
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                toast.success('Announcement pushed successfully!')
+                // Refresh to confirm it's saved
+                setBroadcastMessage(data.message || broadcastMessage)
+            } else {
+                toast.error(data.error || 'Failed to update announcement')
+            }
+        } catch (e) {
+            console.error('Broadcast update error:', e)
+            toast.error('Network error - check your connection')
+        } finally {
+            setIsSavingBroadcast(false)
         }
     }
 
@@ -184,6 +217,41 @@ export default function AdminSettings() {
                                 <Button className="w-full mt-4 border-primary/50 text-primary hover:bg-primary/5" variant="outline" type="submit" disabled={isSavingAdminPass}>
                                     {isSavingAdminPass ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                                     Update Admin Password
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    {/* Global Announcement Section */}
+                    <Card className="border-border bg-card/50 backdrop-blur-sm lg:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-primary font-bold">
+                                <Megaphone className="h-5 w-5" />
+                                Global System Announcement
+                            </CardTitle>
+                            <CardDescription>
+                                Set a marquee scrolling message that will appear in all users' headers.
+                                Perfect for maintenance alerts or database cleaning warnings.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleUpdateBroadcast} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="broadcast">Announcement Message (Scrolling Marquee)</Label>
+                                    <Input
+                                        id="broadcast"
+                                        placeholder="E.g. We are cleaning our database tomorrow. Please export your leads!"
+                                        value={broadcastMessage}
+                                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                                        className="bg-background/50 h-12 text-sm font-medium border-primary/20"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground italic">
+                                        Note: Leaving this empty will remove the message from the user header.
+                                    </p>
+                                </div>
+                                <Button className="w-full bg-primary hover:bg-primary/90" type="submit" disabled={isSavingBroadcast}>
+                                    {isSavingBroadcast ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                    Push Notification to All Users
                                 </Button>
                             </form>
                         </CardContent>

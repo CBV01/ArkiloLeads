@@ -19,27 +19,19 @@ import {
 
 // Weekly data for the chart matching the reference design
 const weeklyData = [
-  { day: 'Mon', sent: 45, opened: 22, clicked: 8, replied: 3 },
-  { day: 'Tue', sent: 52, opened: 25, clicked: 10, replied: 5 },
-  { day: 'Wed', sent: 38, opened: 18, clicked: 6, replied: 2 },
-  { day: 'Thu', sent: 60, opened: 28, clicked: 12, replied: 6 },
-  { day: 'Fri', sent: 42, opened: 15, clicked: 5, replied: 2 },
-  { day: 'Sat', sent: 15, opened: 8, clicked: 3, replied: 1 },
-  { day: 'Sun', sent: 12, opened: 5, clicked: 2, replied: 1 },
+  { day: 'Mon', sent: 45, replied: 3 },
+  { day: 'Tue', sent: 52, replied: 5 },
+  { day: 'Wed', sent: 38, replied: 2 },
+  { day: 'Thu', sent: 60, replied: 6 },
+  { day: 'Fri', sent: 42, replied: 2 },
+  { day: 'Sat', sent: 15, replied: 1 },
+  { day: 'Sun', sent: 12, replied: 1 },
 ]
 
 const chartConfig = {
   sent: {
     label: 'Sent',
     color: 'hsl(250 70% 55%)',
-  },
-  opens: {
-    label: 'Opened',
-    color: 'hsl(180 70% 50%)',
-  },
-  clicks: {
-    label: 'Clicked',
-    color: 'hsl(145 60% 45%)',
   },
   replies: {
     label: 'Replied',
@@ -52,13 +44,13 @@ export function AnalyticsChart({ data }: { data?: any[] }) {
     ...d,
     day: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' })
   })) : [
-    { day: 'Mon', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Tue', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Wed', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Thu', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Fri', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Sat', sent: 0, opens: 0, clicks: 0, replies: 0 },
-    { day: 'Sun', sent: 0, opens: 0, clicks: 0, replies: 0 },
+    { day: 'Mon', sent: 0, replies: 0 },
+    { day: 'Tue', sent: 0, replies: 0 },
+    { day: 'Wed', sent: 0, replies: 0 },
+    { day: 'Thu', sent: 0, replies: 0 },
+    { day: 'Fri', sent: 0, replies: 0 },
+    { day: 'Sat', sent: 0, replies: 0 },
+    { day: 'Sun', sent: 0, replies: 0 },
   ]
 
   return (
@@ -82,30 +74,6 @@ export function AnalyticsChart({ data }: { data?: any[] }) {
                 <stop
                   offset="95%"
                   stopColor="hsl(250 70% 55%)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillOpened" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="hsl(180 70% 50%)"
-                  stopOpacity={0.4}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="hsl(180 70% 50%)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillClicked" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="hsl(145 60% 45%)"
-                  stopOpacity={0.4}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="hsl(145 60% 45%)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -149,28 +117,20 @@ export function AnalyticsChart({ data }: { data?: any[] }) {
               dataKey="replies"
               stroke="hsl(280 70% 60%)"
               fill="url(#fillReplied)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="clicks"
-              stroke="hsl(145 60% 45%)"
-              fill="url(#fillClicked)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="opens"
-              stroke="hsl(180 70% 50%)"
-              fill="url(#fillOpened)"
-              strokeWidth={2}
+              strokeWidth={3}
+              isAnimationActive={true}
+              animationDuration={2000}
+              animationEasing="ease-in-out"
             />
             <Area
               type="monotone"
               dataKey="sent"
               stroke="hsl(250 70% 55%)"
               fill="url(#fillSent)"
-              strokeWidth={2}
+              strokeWidth={3}
+              isAnimationActive={true}
+              animationDuration={1500}
+              animationEasing="ease-in-out"
             />
             <ChartLegend content={<ChartLegendContent />} />
           </AreaChart>

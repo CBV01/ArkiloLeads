@@ -48,7 +48,7 @@ export async function GET() {
 
         // Get daily stats for chart (Last 7 days)
         const dailyStats = await db.execute(`
-            SELECT date, SUM(sent) as sent
+            SELECT date, SUM(sent) as sent, SUM(replies) as replies
             FROM analytics
             GROUP BY date
             ORDER BY date DESC

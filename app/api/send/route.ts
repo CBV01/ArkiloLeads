@@ -35,26 +35,22 @@ export async function POST(req: Request) {
         }
 
         const logId = uuidv4();
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-        // 1. Inject Tracking Pixel (Opens)
-        const trackingPixel = `<img src="${baseUrl}/api/track/${logId}" width="1" height="1" style="display:none;" />`;
+        // Helper function for Spintax {Hi|Hello|Hey}
+        const resolveSpintax = (text: string) => {
+            return text.replace(/\{([^{}]+)\}/g, (match, options) => {
+                const choices = options.split('|');
+                return choices[Math.floor(Math.random() * choices.length)];
+            });
+        };
 
-        // 2. Rewrite Links (Clicks)
-        // Find links in the body and wrap them in our tracking redirect
-        let trackedBody = body;
-        const linkRegex = /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi;
-        trackedBody = trackedBody.replace(linkRegex, (match: string, quote: string, url: string) => {
-            // Don't track links that are already tracking links or internal
-            if (url.includes('/api/click/')) return match;
-            const trackedUrl = `${baseUrl}/api/click/${logId}?url=${encodeURIComponent(url)}`;
-            return match.replace(url, trackedUrl);
-        });
+        const finalSubject = resolveSpintax(subject);
+        const finalBody = resolveSpintax(body);
 
+        // Send clean HTML without tracking for better deliverability
         const htmlBody = `
-            <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
-                ${trackedBody.replace(/\n/g, '<br />')}
-                ${trackingPixel}
+            <div style="font-family: sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px;">
+                ${finalBody.replace(/\n/g, '<br />')}
             </div>
         `;
 
@@ -69,11 +65,12 @@ export async function POST(req: Request) {
             },
         });
 
-        // Send actual email
+        // Send actual email with both HTML and Plain Text for maximum "Trust" from Gmail
         await transporter.sendMail({
             from: `"${smtp.fromName || 'ArkiLeads'}" <${smtp.fromEmail || smtp.user}>`,
             to: (await db.execute({ sql: 'SELECT email FROM leads WHERE id = ?', args: [leadId] })).rows[0].email as string,
-            subject: subject,
+            subject: finalSubject,
+            text: finalBody, // Plain text version (Crucial for Inboxing)
             html: htmlBody,
         });
 

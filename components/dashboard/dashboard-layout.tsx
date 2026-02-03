@@ -48,6 +48,7 @@ import {
   Loader2,
   AlertCircle,
   X,
+  Megaphone,
 } from 'lucide-react'
 import {
   Dialog,
@@ -162,6 +163,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = React.useState<Notification[]>([])
   const [notifOpen, setNotifOpen] = React.useState(false)
   const [profileOpen, setProfileOpen] = React.useState(false)
+  const [broadcast, setBroadcast] = React.useState('')
   const router = useRouter()
 
   const fetchUser = async () => {
@@ -236,11 +238,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const fetchBroadcast = async () => {
+    try {
+      const res = await fetch('/api/broadcast')
+      if (res.ok) {
+        const data = await res.json()
+        setBroadcast(data.message || '')
+      }
+    } catch (e) { }
+  }
+
   React.useEffect(() => {
     fetchUser()
     fetchNotifications(false)
     fetchSmtpStatus()
-    const interval = setInterval(() => fetchNotifications(true), 15000)
+    fetchBroadcast()
+    const interval = setInterval(() => {
+      fetchNotifications(true)
+      fetchBroadcast()
+    }, 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -285,6 +301,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               )}
             </div>
+
+            {/* Global Broadcast Marquee */}
+            {broadcast && (
+              <div className="flex-1 max-w-[45%] mx-4 flex items-center gap-3">
+                <div className="flex items-center gap-2 px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20 shrink-0 shadow-sm">
+                  <Megaphone className="h-3 w-3 animate-bounce" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Notice</span>
+                </div>
+                <div className="flex-1 overflow-hidden relative h-6" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
+                  <div className="animate-marquee whitespace-nowrap absolute inset-0 flex items-center">
+                    <span className="text-sm font-semibold text-primary/80 dark:text-primary/90 tracking-tight">
+                      {broadcast}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-3">
               {!smtpConfigured && (
                 <div className="flex items-center gap-2">

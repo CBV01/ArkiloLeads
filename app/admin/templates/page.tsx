@@ -28,7 +28,7 @@ export default function AdminTemplates() {
 
     const handleSave = async (template: any) => {
         try {
-            const isNew = !templates.find((t: any) => t.id === template.id)
+            const isNew = template.isNew;
             const res = await fetch(`/api/admin/templates`, {
                 method: isNew ? 'POST' : 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -64,7 +64,8 @@ export default function AdminTemplates() {
             name: 'New Template',
             subject: 'Subject Line',
             body: 'Email content goes here...',
-            userId: null
+            userId: null,
+            isNew: true
         }
         setTemplates([newTemp, ...templates])
     }

@@ -15,8 +15,6 @@ export async function GET() {
                 u.id, u.name, u.email, u.status, u.role, u.createdAt,
                 (SELECT COUNT(*) FROM leads l WHERE l.userId = u.id) as leadsCount,
                 COALESCE((SELECT SUM(sent) FROM analytics a WHERE a.userId = u.id), 0) as sentCount,
-                COALESCE((SELECT SUM(opens) FROM analytics a WHERE a.userId = u.id), 0) as opensCount,
-                COALESCE((SELECT SUM(clicks) FROM analytics a WHERE a.userId = u.id), 0) as clicksCount,
                 COALESCE((SELECT SUM(replies) FROM analytics a WHERE a.userId = u.id), 0) as repliesCount
             FROM users u
             WHERE u.role = 'user'

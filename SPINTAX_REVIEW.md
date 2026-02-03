@@ -1,17 +1,14 @@
-const { createClient } = require('@libsql/client');
-require('dotenv').config({ path: '.env' });
+# Spintax Template Options
+These templates use Spintax `{Choice 1|Choice 2}` to make every email unique. This significantly improves inbox delivery by breaking pattern recognition in spam filters.
 
-const url = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+---
 
-const db = createClient({ url, authToken });
+## 1. Generic Template (tpl_generic)
 
-async function updateTemplates() {
-    const templates = [
-        {
-            id: 'tpl_generic',
-            subject: '{After-hours booking|Quick question|Checking in} at {{Company}}',
-            body: `{Hey|Hi|Hello} {{First Name}},
+**Subject:** {After-hours booking|Quick question|Checking in} at {{Company}}
+
+**Body:**
+{Hey|Hi|Hello} {{First Name}},
 
 {We understand you’re busy, so I’ll be quick|I’ll keep this brief as I know you have a lot on your plate|Just a quick note} in letting you know something we noticed about {{Company}}.
 
@@ -23,12 +20,16 @@ We made a short demo for {{Company}} showing how it could {pick up calls|answer 
 
 {Do you have 5 minutes to check it out?|Any interest in seeing the demo?|Open to a quick look?} if it’s not useful, we can trash it and laugh about it — no pressure.
 
-{{Your name}}`
-        },
-        {
-            id: 'tpl_playbook',
-            subject: '{After-hours booking|Question|New demo} at {{Company}}',
-            body: `{Hey|Hi|Hello} {{first_name}},
+{{Your name}}
+
+---
+
+## 2. Playbook Template (tpl_playbook)
+
+**Subject:** {After-hours booking|Question|New demo} at {{Company}}
+
+**Body:**
+{Hey|Hi|Hello} {{first_name}},
 
 {We understand you’re busy, so I’ll be quick|I'll be brief since I know you're likely slammed|Just wanted to share a quick observation} in letting you know something we noticed about {{Company}}.  
 
@@ -42,23 +43,4 @@ We made a short demo for {{Company}} showing how it could {pick up calls|answer 
 
 If it’s not useful, we can trash it and laugh about it no pressure.  
 
-{{Your name}}`
-        }
-    ];
-
-    try {
-        for (const t of templates) {
-            await db.execute({
-                sql: 'UPDATE templates SET subject = ?, body = ? WHERE id = ?',
-                args: [t.subject, t.body, t.id]
-            });
-            console.log(`Updated template: ${t.id}`);
-        }
-        process.exit(0);
-    } catch (e) {
-        console.error(e);
-        process.exit(1);
-    }
-}
-
-updateTemplates();
+{{Your name}}

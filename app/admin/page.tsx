@@ -12,6 +12,15 @@ import {
     ArrowUpRight,
     Loader2
 } from 'lucide-react'
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    ResponsiveContainer,
+    Tooltip,
+} from 'recharts'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
@@ -157,24 +166,62 @@ export default function AdminOverview() {
                             <CardDescription>Email outreach over the last 7 days</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[200px] flex items-end justify-between gap-2 px-2 mt-4">
-                                {data?.dailyStats?.map((day: any) => {
-                                    const height = Math.min(100, (day.sent / (data.stats.sent || 1)) * 500) || 5;
-                                    return (
-                                        <div key={day.date} className="group relative flex flex-col items-center flex-1">
-                                            <div className="absolute -top-8 bg-foreground text-background px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {day.sent}
-                                            </div>
-                                            <div
-                                                className="w-full bg-primary/20 group-hover:bg-primary/40 transition-all rounded-t-lg border-b-2 border-primary"
-                                                style={{ height: `${height}%` }}
-                                            />
-                                            <span className="text-[10px] text-muted-foreground mt-2 font-mono uppercase tracking-tighter">
-                                                {day.date.split('-').slice(1).join('/')}
-                                            </span>
-                                        </div>
-                                    )
-                                })}
+                            <div className="h-[240px] w-full mt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart
+                                        data={data?.dailyStats?.map((d: any) => ({
+                                            ...d,
+                                            date: d.date.split('-').slice(1).join('/')
+                                        })) || []}
+                                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                                    >
+                                        <defs>
+                                            <linearGradient id="adminSent" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id="adminReplied" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#64748b', fontSize: 10 }}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#64748b', fontSize: 10 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                                            itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="sent"
+                                            stroke="var(--primary)"
+                                            strokeWidth={3}
+                                            fill="url(#adminSent)"
+                                            isAnimationActive={true}
+                                            animationDuration={1500}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="replies"
+                                            stroke="#a855f7"
+                                            strokeWidth={3}
+                                            fill="url(#adminReplied)"
+                                            isAnimationActive={true}
+                                            animationDuration={2000}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </CardContent>
                     </Card>

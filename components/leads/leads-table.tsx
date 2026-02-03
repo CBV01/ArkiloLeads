@@ -50,14 +50,6 @@ const statusConfig: Record<
     label: 'Sent',
     className: 'bg-success/10 text-success border border-success/30'
   },
-  opened: {
-    label: 'Opened',
-    className: 'bg-opened/10 text-opened border border-opened/30'
-  },
-  clicked: {
-    label: 'Clicked',
-    className: 'bg-clicked/10 text-clicked border border-clicked/30'
-  },
   replied: {
     label: 'Replied',
     className: 'bg-replied/10 text-replied border border-replied/30'
@@ -72,8 +64,6 @@ const avatarColors = [
   'bg-primary',
   'bg-chart-2',
   'bg-success',
-  'bg-opened',
-  'bg-clicked',
   'bg-replied',
 ]
 

@@ -153,7 +153,11 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
       }
 
       const result = await response.json()
-      toast.success(`Successfully imported ${result.count} leads`)
+      const message = result.skipped > 0
+        ? `Imported ${result.count} new leads. ${result.skipped} duplicates skipped.`
+        : `Successfully imported ${result.count} leads.`
+
+      toast.success(message)
       onSuccess?.()
       clearFile()
     } catch (error) {

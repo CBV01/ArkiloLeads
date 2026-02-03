@@ -14,8 +14,6 @@ import {
     Upload,
     User as UserIcon,
     Loader2,
-    Eye,
-    MousePointerClick,
     MessageSquare
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -113,7 +111,7 @@ export default function AdminUsers() {
                             <TableRow>
                                 <TableHead className="w-[30%]">User Profile</TableHead>
                                 <TableHead className="w-[15%]">Status</TableHead>
-                                <TableHead className="w-[35%] text-center">Activity & Engagement</TableHead>
+                                <TableHead className="w-[35%] text-center">User Activity</TableHead>
                                 <TableHead className="w-[10%]">Joined</TableHead>
                                 <TableHead className="w-[10%] text-right pr-6">Manage</TableHead>
                             </TableRow>
@@ -157,7 +155,7 @@ export default function AdminUsers() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="grid grid-cols-5 gap-2 items-center text-center">
+                                            <div className="grid grid-cols-3 gap-2 items-center text-center">
                                                 <div className="flex flex-col items-center gap-1 group/stat" title="Leads Uploaded">
                                                     <Upload className="h-3.5 w-3.5 text-muted-foreground group-hover/stat:text-primary transition-colors" />
                                                     <span className="font-mono text-[11px] font-bold">{user.leadsCount || 0}</span>
@@ -165,14 +163,6 @@ export default function AdminUsers() {
                                                 <div className="flex flex-col items-center gap-1 group/stat" title="Emails Sent">
                                                     <Mail className="h-3.5 w-3.5 text-muted-foreground group-hover/stat:text-primary transition-colors" />
                                                     <span className="font-mono text-[11px] font-bold">{user.sentCount || 0}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center gap-1 group/stat" title="Total Opens">
-                                                    <Eye className="h-3.5 w-3.5 text-clicked group-hover/stat:text-clicked/80 transition-colors" />
-                                                    <span className="font-mono text-[11px] font-bold">{user.opensCount || 0}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center gap-1 group/stat" title="Total Clicks">
-                                                    <MousePointerClick className="h-3.5 w-3.5 text-success group-hover/stat:text-success/80 transition-colors" />
-                                                    <span className="font-mono text-[11px] font-bold">{user.clicksCount || 0}</span>
                                                 </div>
                                                 <div className="flex flex-col items-center gap-1 group/stat" title="Total Replies">
                                                     <MessageSquare className="h-3.5 w-3.5 text-replied group-hover/stat:text-replied/80 transition-colors" />

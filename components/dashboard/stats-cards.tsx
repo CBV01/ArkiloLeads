@@ -6,8 +6,6 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import {
   Send,
-  Eye,
-  MousePointerClick,
   MessageSquare,
   TrendingUp,
   TrendingDown,
@@ -70,22 +68,6 @@ export function StatsCards({ stats }: { stats?: any }) {
       color: 'bg-primary/10 text-primary',
     },
     {
-      title: 'Opens',
-      value: stats?.totalOpened?.toString() || '0',
-      change: '+0%',
-      trend: 'up',
-      icon: Eye,
-      color: 'bg-clicked/10 text-clicked',
-    },
-    {
-      title: 'Clicks',
-      value: stats?.totalClicked?.toString() || '0',
-      change: '+0%',
-      trend: 'up',
-      icon: MousePointerClick,
-      color: 'bg-success/10 text-success',
-    },
-    {
       title: 'Replies',
       value: stats?.totalReplied?.toString() || '0',
       change: '+0%',
@@ -96,7 +78,7 @@ export function StatsCards({ stats }: { stats?: any }) {
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2">
       {items.map((stat) => (
         <StatsCard key={stat.title} {...stat} />
       ))}

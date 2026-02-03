@@ -139,8 +139,8 @@ export function SendQueue({
     let sentCount = 0
     let failCount = 0
 
-    // Concurrency control: Process in batches of 3
-    const concurrency = 3
+    // Safe concurrency and randomized delay for deliverability
+    const concurrency = 2
     for (let i = 0; i < selectedIds.length; i += concurrency) {
       const batch = selectedIds.slice(i, i + concurrency)
 
@@ -232,227 +232,229 @@ export function SendQueue({
         console.error('Batch error:', e)
       }
 
-      // Delay between parallel batches
+      // Delay between parallel batches - slow and randomized for "human" feel
       if (i + concurrency < selectedIds.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        const waitTime = Math.floor(Math.random() * (30000 - 15000 + 1)) + 15000;
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-    }
-
-    setIsSending(false)
-    fetchActiveSmtp() // Refresh usage count
-
-    if (failCount > 0) {
-      toast.warning(`Batch completed: ${sentCount} sent, ${failCount} failed`)
-    } else {
-      toast.success(`Successfully sent ${sentCount} emails`)
     }
   }
 
-  const totalProgress = progress.sent + progress.failed
-  const progressPercentage = progress.total > 0 ? (totalProgress / progress.total) * 100 : 0
+  setIsSending(false)
+  fetchActiveSmtp() // Refresh usage count
 
-  return (
-    <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      {/* Left Panel - Configuration */}
-      <div className="space-y-4">
-        {/* Active SMTP Card */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-2">
-              <RefreshCw className={cn("h-4 w-4 text-primary", isSending && "animate-spin")} />
-              <CardTitle className="text-base font-medium">Rotation Status</CardTitle>
-            </div>
-            {activeSmtp && (
-              <Badge variant="outline" className="text-[10px] font-bold uppercase">
-                Slot {activeSmtp.slot}
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent>
-            {activeSmtp ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Account</span>
-                  <span className="font-medium truncate max-w-[150px]">{activeSmtp.user}</span>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[11px] font-medium">
-                    <span>Daily Limit Usage</span>
-                    <span>{activeSmtp.dailySent} / 500</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn("h-full transition-all duration-500", activeSmtp.dailySent >= 450 ? "bg-destructive" : "bg-success")}
-                      style={{ width: `${(activeSmtp.dailySent / 500) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs"
-                  asChild
-                  disabled={isSending}
-                >
-                  <Link href="/smtp">
-                    Change / Rotate Account <ArrowRight className="ml-1.5 h-3 w-3" />
-                  </Link>
-                </Button>
+  if (failCount > 0) {
+    toast.warning(`Batch completed: ${sentCount} sent, ${failCount} failed`)
+  } else {
+    toast.success(`Successfully sent ${sentCount} emails`)
+  }
+}
+
+const totalProgress = progress.sent + progress.failed
+const progressPercentage = progress.total > 0 ? (totalProgress / progress.total) * 100 : 0
+
+return (
+  <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+    {/* Left Panel - Configuration */}
+    <div className="space-y-4">
+      {/* Active SMTP Card */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-2">
+            <RefreshCw className={cn("h-4 w-4 text-primary", isSending && "animate-spin")} />
+            <CardTitle className="text-base font-medium">Rotation Status</CardTitle>
+          </div>
+          {activeSmtp && (
+            <Badge variant="outline" className="text-[10px] font-bold uppercase">
+              Slot {activeSmtp.slot}
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent>
+          {activeSmtp ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Account</span>
+                <span className="font-medium truncate max-w-[150px]">{activeSmtp.user}</span>
               </div>
-            ) : (
-              <div className="text-center py-2">
-                <p className="text-sm text-muted-foreground mb-3">No active SMTP configured</p>
-                <Button size="sm" className="w-full" asChild>
-                  <Link href="/smtp">Go to SMTP Library</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Email Template Card */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base font-medium">Smart Templates</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg bg-primary/5 border border-primary/10 p-4">
-              <p className="text-sm font-medium text-primary mb-1">PLD Powered Logic</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Automatically selects templates based on lead industry match.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Ready to Send Card */}
-        <Card className={cn(
-          "border-2 border-dashed transition-colors duration-300",
-          isSending ? "border-primary bg-primary/5" : "border-border bg-card"
-        )}>
-          <CardContent className="py-8">
-            <div className="flex flex-col items-center text-center">
-              {isSending ? (
-                <div className="w-full space-y-4">
-                  <div className="relative h-20 w-20 mx-auto">
-                    <div className="absolute inset-0 rounded-full border-4 border-primary/10" />
-                    <div
-                      className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center font-bold text-xl">
-                      {Math.round(progressPercentage)}%
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Sending Outreach...</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {progress.sent} sent • {progress.failed} failed
-                    </p>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-500"
-                        style={{ width: `${progressPercentage}%` }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">Batch size: {progress.total} leads</p>
-                  </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-medium">
+                  <span>Daily Limit Usage</span>
+                  <span>{activeSmtp.dailySent} / 500</span>
                 </div>
-              ) : (
-                <>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                    <Send className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mt-4 font-semibold">Ready to Send</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedIds.length} leads selected
-                  </p>
-                  <Button
-                    className="w-full mt-4"
-                    disabled={selectedIds.length === 0 || isSending || (selectedIds.length === 1 && selectedIds[0] === 'placeholder') || !activeSmtp || activeSmtp.dailySent >= 500}
-                    onClick={handleSendBatch}
-                  >
-                    <Send className="mr-2 h-4 w-4" />
-                    Send Batch
-                  </Button>
-                  {activeSmtp?.dailySent >= 500 && (
-                    <p className="mt-2 text-[10px] text-destructive font-bold uppercase tracking-tight">Limit reached. Rotate SMTP.</p>
-                  )}
-                </>
-              )}
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full transition-all duration-500", activeSmtp.dailySent >= 450 ? "bg-destructive" : "bg-success")}
+                    style={{ width: `${(activeSmtp.dailySent / 500) * 100}%` }}
+                  />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                asChild
+                disabled={isSending}
+              >
+                <Link href="/smtp">
+                  Change / Rotate Account <ArrowRight className="ml-1.5 h-3 w-3" />
+                </Link>
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="text-center py-2">
+              <p className="text-sm text-muted-foreground mb-3">No active SMTP configured</p>
+              <Button size="sm" className="w-full" asChild>
+                <Link href="/smtp">Go to SMTP Library</Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Right Panel - Lead Selection */}
+      {/* Email Template Card */}
       <Card className="border-border bg-card">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-medium">Select Leads to Email</CardTitle>
-            <Button variant="outline" size="sm" onClick={selectAll} disabled={isSending}>
-              {selectedIds.length === currentLeads.length ? 'Deselect All' : 'Select All'}
-            </Button>
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base font-medium">Smart Templates</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-1">
-            {currentLeads.map((lead) => {
-              const fullName = `${lead.firstName} ${lead.lastName}`
-              const isSelected = selectedIds.includes(lead.id)
-              const status = sendingStatus[lead.id]
+          <div className="rounded-lg bg-primary/5 border border-primary/10 p-4">
+            <p className="text-sm font-medium text-primary mb-1">PLD Powered Logic</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Automatically selects templates based on lead industry match.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-              return (
-                <div
-                  key={lead.id}
-                  className={cn(
-                    'flex items-center gap-4 rounded-lg p-3 transition-colors border border-transparent',
-                    isSelected ? 'bg-primary/5 border-primary/20' : 'hover:bg-muted/50',
-                    isSending || lead.id === 'placeholder' ? 'cursor-default opacity-80' : 'cursor-pointer'
-                  )}
-                  onClick={() => lead.id !== 'placeholder' && toggleSelect(lead.id)}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => lead.id !== 'placeholder' && toggleSelect(lead.id)}
-                    disabled={isSending || lead.id === 'placeholder'}
-                    aria-label={`Select ${fullName}`}
+      {/* Ready to Send Card */}
+      <Card className={cn(
+        "border-2 border-dashed transition-colors duration-300",
+        isSending ? "border-primary bg-primary/5" : "border-border bg-card"
+      )}>
+        <CardContent className="py-8">
+          <div className="flex flex-col items-center text-center">
+            {isSending ? (
+              <div className="w-full space-y-4">
+                <div className="relative h-20 w-20 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-4 border-primary/10" />
+                  <div
+                    className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"
                   />
-                  <Avatar className={cn('h-10 w-10', getAvatarColor(fullName))}>
-                    <AvatarFallback className="text-white text-sm font-medium bg-transparent">
-                      {lead.firstName[0]}{lead.lastName?.[0] || 'D'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{fullName}</p>
-                      <Badge variant="outline" className="text-xs">
-                        {lead.industry}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{lead.email}</p>
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="flex items-center gap-2">
-                    {status === 'sending' && (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    )}
-                    {status === 'sent' && (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    )}
-                    {status === 'failed' && (
-                      <AlertCircle className="h-4 w-4 text-destructive" />
-                    )}
+                  <div className="absolute inset-0 flex items-center justify-center font-bold text-xl">
+                    {Math.round(progressPercentage)}%
                   </div>
                 </div>
-              )
-            })}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Sending Outreach...</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {progress.sent} sent • {progress.failed} failed
+                  </p>
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Batch size: {progress.total} leads</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <Send className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="mt-4 font-semibold">Ready to Send</h3>
+                <p className="text-sm text-muted-foreground">
+                  {selectedIds.length} leads selected
+                </p>
+                <Button
+                  className="w-full mt-4"
+                  disabled={selectedIds.length === 0 || isSending || (selectedIds.length === 1 && selectedIds[0] === 'placeholder') || !activeSmtp || activeSmtp.dailySent >= 500}
+                  onClick={handleSendBatch}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Batch
+                </Button>
+                {activeSmtp?.dailySent >= 500 && (
+                  <p className="mt-2 text-[10px] text-destructive font-bold uppercase tracking-tight">Limit reached. Rotate SMTP.</p>
+                )}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+
+    {/* Right Panel - Lead Selection */}
+    <Card className="border-border bg-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium">Select Leads to Email</CardTitle>
+          <Button variant="outline" size="sm" onClick={selectAll} disabled={isSending}>
+            {selectedIds.length === currentLeads.length ? 'Deselect All' : 'Select All'}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-1">
+          {currentLeads.map((lead) => {
+            const fullName = `${lead.firstName} ${lead.lastName}`
+            const isSelected = selectedIds.includes(lead.id)
+            const status = sendingStatus[lead.id]
+
+            return (
+              <div
+                key={lead.id}
+                className={cn(
+                  'flex items-center gap-4 rounded-lg p-3 transition-colors border border-transparent',
+                  isSelected ? 'bg-primary/5 border-primary/20' : 'hover:bg-muted/50',
+                  isSending || lead.id === 'placeholder' ? 'cursor-default opacity-80' : 'cursor-pointer'
+                )}
+                onClick={() => lead.id !== 'placeholder' && toggleSelect(lead.id)}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => lead.id !== 'placeholder' && toggleSelect(lead.id)}
+                  disabled={isSending || lead.id === 'placeholder'}
+                  aria-label={`Select ${fullName}`}
+                />
+                <Avatar className={cn('h-10 w-10', getAvatarColor(fullName))}>
+                  <AvatarFallback className="text-white text-sm font-medium bg-transparent">
+                    {lead.firstName[0]}{lead.lastName?.[0] || 'D'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{fullName}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {lead.industry}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{lead.email}</p>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="flex items-center gap-2">
+                  {status === 'sending' && (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  )}
+                  {status === 'sent' && (
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                  )}
+                  {status === 'failed' && (
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)
 }

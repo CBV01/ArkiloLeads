@@ -20,8 +20,14 @@ export async function GET() {
             args: [session.id]
         });
 
+        const broadcastRes = await db.execute({
+            sql: 'SELECT value FROM settings WHERE key = ?',
+            args: ['global_broadcast_message']
+        });
+
         return NextResponse.json({
             passkey: passkeyRes.rows[0]?.value || '',
+            broadcast: broadcastRes.rows[0]?.value || '',
             admin: adminRes.rows[0] || { name: 'System Admin', email: 'admin@arkilo.com' }
         });
     } catch (error) {
@@ -53,6 +59,27 @@ export async function PATCH(req: Request) {
                 args: [body.password, 'admin_password']
             });
             return NextResponse.json({ success: true, message: 'Admin login password updated' });
+        }
+
+        if (type === 'broadcast') {
+            // Check if it exists first because UPDATE won't work if zero rows match
+            const exists = await db.execute({
+                sql: 'SELECT key FROM settings WHERE key = ?',
+                args: ['global_broadcast_message']
+            });
+
+            if (exists.rows.length > 0) {
+                await db.execute({
+                    sql: 'UPDATE settings SET value = ? WHERE key = ?',
+                    args: [body.message, 'global_broadcast_message']
+                });
+            } else {
+                await db.execute({
+                    sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+                    args: ['global_broadcast_message', body.message]
+                });
+            }
+            return NextResponse.json({ success: true, message: body.message });
         }
 
         if (type === 'admin') {

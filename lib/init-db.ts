@@ -8,15 +8,17 @@ export async function initDb() {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS leads (
         id TEXT PRIMARY KEY,
+        userId TEXT,
         firstName TEXT,
         lastName TEXT,
-        email TEXT UNIQUE,
+        email TEXT,
         company TEXT,
         city TEXT,
         industry TEXT,
         country TEXT,
         status TEXT DEFAULT 'pending',
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(userId, email)
       );
     `);
 
