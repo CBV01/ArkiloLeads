@@ -238,7 +238,6 @@ export function SendQueue({
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
-  }
 
   setIsSending(false)
   fetchActiveSmtp() // Refresh usage count
