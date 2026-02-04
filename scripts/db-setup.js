@@ -140,17 +140,22 @@ async function initDb() {
       );
     `);
 
-    // SMTP settings per user
+    // SMTP settings per user with slots
     await db.execute(`
       CREATE TABLE IF NOT EXISTS smtp_settings (
-        userId TEXT PRIMARY KEY,
+        userId TEXT,
+        slot INTEGER,
         host TEXT,
         port INTEGER,
         user TEXT,
         pass TEXT,
         fromEmail TEXT,
         fromName TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        isActive INTEGER DEFAULT 0,
+        dailySent INTEGER DEFAULT 0,
+        lastSentAt DATETIME,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (userId, slot)
       );
     `);
 

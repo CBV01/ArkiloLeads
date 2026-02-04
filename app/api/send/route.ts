@@ -76,6 +76,7 @@ export async function POST(req: Request) {
 
         // 2. Log the email and UPDATE SMTP usage
         try {
+            console.log(`[Send API] Updating DB for lead ${leadId}, template ${templateId}`);
             // Batch these for speed
             await db.batch([
                 {
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
                     args: ['sent', leadId, session.id]
                 }
             ], 'write');
+            console.log(`[Send API] DB batch update successful`);
 
             // Add a notification for certain intervals or success
             const notifId = uuidv4();
@@ -106,6 +108,7 @@ export async function POST(req: Request) {
               ON CONFLICT(userId, date) DO UPDATE SET sent = sent + 1`,
                 args: [session.id, today]
             });
+            console.log(`[Send API] Analytics updated for user ${session.id}, date ${today}`);
         } catch (dbError) {
             console.error('Database update failed during send:', dbError);
         }

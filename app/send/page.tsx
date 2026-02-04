@@ -20,35 +20,36 @@ function SendPageContent() {
   } | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
 
-  React.useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true)
-      try {
-        const [leadsRes, templatesRes, playbooksRes] = await Promise.all([
-          fetch('/api/leads'),
-          fetch('/api/templates'),
-          fetch('/api/playbooks'),
-        ])
+  const fetchData = React.useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [leadsRes, templatesRes, playbooksRes] = await Promise.all([
+        fetch('/api/leads?limit=1000'),
+        fetch('/api/templates'),
+        fetch('/api/playbooks'),
+      ])
 
-        const [leadsData, templates, playbooks] = await Promise.all([
-          leadsRes.json(),
-          templatesRes.json(),
-          playbooksRes.json(),
-        ])
+      const [leadsData, templates, playbooks] = await Promise.all([
+        leadsRes.json(),
+        templatesRes.json(),
+        playbooksRes.json(),
+      ])
 
-        setData({
-          leads: Array.isArray(leadsData) ? leadsData : (leadsData.leads || []),
-          templates: Array.isArray(templates) ? templates : (templates.templates || []),
-          playbooks: Array.isArray(playbooks) ? playbooks : (playbooks.playbooks || [])
-        })
-      } catch (e) {
-        console.error('Failed to fetch data for send:', e)
-      } finally {
-        setIsLoading(false)
-      }
+      setData({
+        leads: Array.isArray(leadsData) ? leadsData : (leadsData.leads || []),
+        templates: Array.isArray(templates) ? templates : (templates.templates || []),
+        playbooks: Array.isArray(playbooks) ? playbooks : (playbooks.playbooks || [])
+      })
+    } catch (e) {
+      console.error('Failed to fetch data for send:', e)
+    } finally {
+      setIsLoading(false)
     }
-    fetchData()
   }, [])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   return (
     <div className="space-y-6">
@@ -69,6 +70,7 @@ function SendPageContent() {
           templates={data.templates}
           playbooks={data.playbooks}
           selectedLeadIds={selectedLeadIds}
+          onLeadsRefresh={() => fetchData(false)}
         />
       ) : (
         <div className="text-center py-20 border-2 border-dashed rounded-xl">

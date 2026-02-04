@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/popover'
 import type { Lead } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { Search, Eye, Send, Filter, Download, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Search, Eye, Send, Filter, Download, Upload, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 interface LeadsTableProps {
@@ -36,6 +36,7 @@ interface LeadsTableProps {
   }
   onPageChange?: (offset: number) => void
   onSearch?: (search: string) => void
+  onDelete?: (id: string) => void
 }
 
 const statusConfig: Record<
@@ -58,6 +59,14 @@ const statusConfig: Record<
     label: 'Failed',
     className: 'bg-destructive/10 text-destructive border border-destructive/30'
   },
+  opened: {
+    label: 'Opened',
+    className: 'bg-blue-500/10 text-blue-500 border border-blue-500/30'
+  },
+  clicked: {
+    label: 'Clicked',
+    className: 'bg-orange-500/10 text-orange-500 border border-orange-500/30'
+  }
 }
 
 const avatarColors = [
@@ -79,7 +88,9 @@ export function LeadsTable({
   onUploadClick,
   pagination,
   onPageChange,
-  onSearch
+  onSearch,
+  onDelete,
+  onBulkDelete
 }: LeadsTableProps) {
   const [search, setSearch] = React.useState('')
   const [industryFilter, setIndustryFilter] = React.useState<string[]>([])
@@ -101,11 +112,20 @@ export function LeadsTable({
   const currentPage = Math.floor(offset / limit) + 1
   const totalPages = Math.ceil(total / limit)
 
+  const isAllCurrentPageSelected = leads.length > 0 && leads.every(l => selectedLeads.includes(l.id))
+
   const toggleSelectAll = () => {
-    if (selectedLeads.length === leads.length) {
-      setSelectedLeads([])
+    if (isAllCurrentPageSelected) {
+      // Deselect all on current page
+      const currentPageIds = leads.map(l => l.id)
+      setSelectedLeads(prev => prev.filter(id => !currentPageIds.includes(id)))
     } else {
-      setSelectedLeads(leads.map((l) => l.id))
+      // Select all on current page
+      const currentPageIds = leads.map(l => l.id)
+      setSelectedLeads(prev => {
+        const uniqueIds = new Set([...prev, ...currentPageIds])
+        return Array.from(uniqueIds)
+      })
     }
   }
 
@@ -147,6 +167,21 @@ export function LeadsTable({
           />
         </div>
         <div className="flex items-center gap-2">
+          {selectedLeads.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) {
+                  onBulkDelete?.(selectedLeads)
+                  setSelectedLeads([])
+                }
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected ({selectedLeads.length})
+            </Button>
+          )}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn(hasActiveFilters && 'border-primary text-primary')}>
@@ -215,10 +250,7 @@ export function LeadsTable({
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-12">
                 <Checkbox
-                  checked={
-                    leads.length > 0 &&
-                    selectedLeads.length === leads.length
-                  }
+                  checked={isAllCurrentPageSelected}
                   onCheckedChange={toggleSelectAll}
                   aria-label="Select all"
                 />
@@ -288,11 +320,18 @@ export function LeadsTable({
                           <span className="sr-only">Preview</span>
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <Link href={`/send?leads=${lead.id}`}>
-                          <Send className="h-4 w-4" />
-                          <span className="sr-only">Send</span>
-                        </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this lead?')) {
+                            onDelete?.(lead.id)
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
                       </Button>
                     </div>
                   </TableCell>

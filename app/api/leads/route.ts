@@ -13,7 +13,7 @@ export async function GET(req: Request) {
         const industry = searchParams.get('industry');
         const country = searchParams.get('country');
         const search = searchParams.get('search');
-        const limit = parseInt(searchParams.get('limit') || '50');
+        const limit = parseInt(searchParams.get('limit') || '1000');
         const offset = parseInt(searchParams.get('offset') || '0');
 
         let query = 'FROM leads WHERE userId = ?';
@@ -101,6 +101,54 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'A lead with this email already exists' }, { status: 400 });
         }
         console.error('Failed to add lead:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await getSession();
+        if (!session) return NextResponse.json({ error: 'Auth required' }, { status: 401 });
+
+        const { id, ids } = await req.json();
+        
+        if (ids && Array.isArray(ids)) {
+            // Bulk Delete
+            if (ids.length === 0) return NextResponse.json({ error: 'No IDs provided' }, { status: 400 });
+
+            // Create placeholders for SQL IN clause
+            const placeholders = ids.map(() => '?').join(',');
+            
+            await db.execute({
+                sql: `DELETE FROM leads WHERE id IN (${placeholders}) AND userId = ?`,
+                args: [...ids, session.id]
+            });
+
+            // Also delete email logs
+            await db.execute({
+                sql: `DELETE FROM email_logs WHERE lead_id IN (${placeholders}) AND userId = ?`,
+                args: [...ids, session.id]
+            });
+
+            return NextResponse.json({ success: true });
+        }
+
+        if (!id) return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
+
+        await db.execute({
+            sql: 'DELETE FROM leads WHERE id = ? AND userId = ?',
+            args: [id, session.id]
+        });
+
+        // Also delete email logs
+        await db.execute({
+            sql: 'DELETE FROM email_logs WHERE lead_id = ? AND userId = ?',
+            args: [id, session.id]
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Failed to delete lead:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

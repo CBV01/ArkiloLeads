@@ -58,6 +58,42 @@ export default function LeadsPage() {
     }
   }, [leads])
 
+  const handleDeleteLead = async (id: string) => {
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      if (res.ok) {
+        fetchLeads()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete lead')
+      }
+    } catch (e) {
+      console.error('Delete error:', e)
+    }
+  }
+
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      if (res.ok) {
+        fetchLeads()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete leads')
+      }
+    } catch (e) {
+      console.error('Bulk delete error:', e)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -133,6 +169,8 @@ export default function LeadsPage() {
             pagination={pagination}
             onPageChange={(offset) => fetchLeads({ offset, limit: pagination.limit })}
             onSearch={(search) => fetchLeads({ search, limit: pagination.limit, offset: 0 })}
+            onDelete={handleDeleteLead}
+            onBulkDelete={handleBulkDelete}
           />
         )}
       </div>
