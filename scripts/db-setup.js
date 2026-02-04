@@ -18,14 +18,14 @@ async function initDb() {
   console.log('Initializing database tables...');
 
   try {
-    // Drop existing tables to ensure schema updates are applied
-    console.log('Resetting schema...');
-    await db.execute(`DROP TABLE IF EXISTS leads`);
-    await db.execute(`DROP TABLE IF EXISTS email_logs`);
-    await db.execute(`DROP TABLE IF EXISTS analytics`);
-    await db.execute(`DROP TABLE IF EXISTS playbooks`);
-    await db.execute(`DROP TABLE IF EXISTS templates`);
-    await db.execute(`DROP TABLE IF EXISTS settings`);
+    // Drop existing tables only if you explicitly want a full wipe
+    // console.log('Resetting schema...');
+    // await db.execute(`DROP TABLE IF EXISTS leads`);
+    // await db.execute(`DROP TABLE IF EXISTS email_logs`);
+    // await db.execute(`DROP TABLE IF EXISTS analytics`);
+    // await db.execute(`DROP TABLE IF EXISTS playbooks`);
+    // await db.execute(`DROP TABLE IF EXISTS templates`);
+    // await db.execute(`DROP TABLE IF EXISTS settings`);
     // Note: Not dropping users table to keep user accounts, 
     // but will use ALTER TABLE to add role/status if they don't exist
     try {

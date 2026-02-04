@@ -247,6 +247,7 @@ export function SendQueue({
 
     setIsSending(false)
     fetchActiveSmtp() // Refresh usage count
+    onLeadsRefresh?.() // Refresh leads list
 
     if (failCount > 0) {
       toast.warning(`Batch completed: ${sentCount} sent, ${failCount} failed`)

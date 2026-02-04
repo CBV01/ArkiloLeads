@@ -70,7 +70,7 @@ function SendPageContent() {
           templates={data.templates}
           playbooks={data.playbooks}
           selectedLeadIds={selectedLeadIds}
-          onLeadsRefresh={() => fetchData(false)}
+          onLeadsRefresh={() => fetchData()}
         />
       ) : (
         <div className="text-center py-20 border-2 border-dashed rounded-xl">

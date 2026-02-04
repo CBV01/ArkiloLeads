@@ -37,6 +37,7 @@ interface LeadsTableProps {
   onPageChange?: (offset: number) => void
   onSearch?: (search: string) => void
   onDelete?: (id: string) => void
+  onBulkDelete?: (ids: string[]) => void
 }
 
 const statusConfig: Record<
