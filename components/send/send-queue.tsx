@@ -15,17 +15,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { Lead, EmailTemplate, Playbook } from '@/lib/types'
-import { Send, Mail, Loader2, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { Send, Mail, Loader2, CheckCircle2, AlertCircle, RefreshCw, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SendQueueProps {
   leads: Lead[]
   templates: EmailTemplate[]
   playbooks: Playbook[]
   selectedLeadIds?: string[]
-  onLeadsRefresh?: () => void
 }
 
 const avatarColors = [
@@ -81,7 +79,6 @@ export function SendQueue({
   templates,
   playbooks,
   selectedLeadIds,
-  onLeadsRefresh
 }: SendQueueProps) {
   const currentLeads = leads.length > 0 ? leads : [placeholderLead]
   const currentTemplates = templates.length > 0 ? templates : [placeholderTemplate]
@@ -247,7 +244,6 @@ export function SendQueue({
 
     setIsSending(false)
     fetchActiveSmtp() // Refresh usage count
-    onLeadsRefresh?.() // Refresh leads list
 
     if (failCount > 0) {
       toast.warning(`Batch completed: ${sentCount} sent, ${failCount} failed`)
@@ -420,7 +416,7 @@ export function SendQueue({
             {/* Status Tabs */}
             <div className="flex p-1 bg-muted rounded-lg w-fit">
               <button
-                onClick={() => { setStatusFilter('pending'); setPage(1); setSelectedIds([]); }}
+                onClick={() => { setStatusFilter('pending'); setPage(1); }}
                 className={cn(
                   "px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all",
                   statusFilter === 'pending' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
@@ -429,7 +425,7 @@ export function SendQueue({
                 Pending
               </button>
               <button
-                onClick={() => { setStatusFilter('sent'); setPage(1); setSelectedIds([]); }}
+                onClick={() => { setStatusFilter('sent'); setPage(1); }}
                 className={cn(
                   "px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all",
                   statusFilter === 'sent' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"

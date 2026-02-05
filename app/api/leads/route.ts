@@ -110,29 +110,7 @@ export async function DELETE(req: Request) {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Auth required' }, { status: 401 });
 
-        const { id, ids } = await req.json();
-        
-        if (ids && Array.isArray(ids)) {
-            // Bulk Delete
-            if (ids.length === 0) return NextResponse.json({ error: 'No IDs provided' }, { status: 400 });
-
-            // Create placeholders for SQL IN clause
-            const placeholders = ids.map(() => '?').join(',');
-            
-            await db.execute({
-                sql: `DELETE FROM leads WHERE id IN (${placeholders}) AND userId = ?`,
-                args: [...ids, session.id]
-            });
-
-            // Also delete email logs
-            await db.execute({
-                sql: `DELETE FROM email_logs WHERE lead_id IN (${placeholders}) AND userId = ?`,
-                args: [...ids, session.id]
-            });
-
-            return NextResponse.json({ success: true });
-        }
-
+        const { id } = await req.json();
         if (!id) return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
 
         await db.execute({

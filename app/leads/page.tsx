@@ -76,24 +76,6 @@ export default function LeadsPage() {
     }
   }
 
-  const handleBulkDelete = async (ids: string[]) => {
-    try {
-      const res = await fetch('/api/leads', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
-      })
-      if (res.ok) {
-        fetchLeads()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to delete leads')
-      }
-    } catch (e) {
-      console.error('Bulk delete error:', e)
-    }
-  }
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -170,7 +152,6 @@ export default function LeadsPage() {
             onPageChange={(offset) => fetchLeads({ offset, limit: pagination.limit })}
             onSearch={(search) => fetchLeads({ search, limit: pagination.limit, offset: 0 })}
             onDelete={handleDeleteLead}
-            onBulkDelete={handleBulkDelete}
           />
         )}
       </div>

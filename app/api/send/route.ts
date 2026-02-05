@@ -26,19 +26,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No active SMTP configured. Please go to SMTP Library to set one up.' }, { status: 400 });
         }
 
-        // Auto-reset daily limit if date changed
-        if (smtp.lastSentAt) {
-            const lastSent = new Date(smtp.lastSentAt as string);
-            const today = new Date();
-            if (lastSent.toDateString() !== today.toDateString()) {
-                await db.execute({
-                    sql: 'UPDATE smtp_settings SET dailySent = 0 WHERE userId = ? AND slot = ?',
-                    args: [session.id, smtp.slot]
-                });
-                smtp.dailySent = 0;
-            }
-        }
-
         // Check Daily Limit (500)
         if ((smtp.dailySent as number) >= 500) {
             return NextResponse.json({
@@ -89,82 +76,38 @@ export async function POST(req: Request) {
 
         // 2. Log the email and UPDATE SMTP usage
         try {
-            console.log(`[Send API] Starting DB updates for lead ${leadId}, user ${session.id}`);
-
-            // 1. Log Email (Critical for history)
-            try {
-                await db.execute({
+            // Batch these for speed
+            await db.batch([
+                {
                     sql: 'INSERT INTO email_logs (id, userId, lead_id, template_id, status) VALUES (?, ?, ?, ?, ?)',
                     args: [logId, session.id, leadId, templateId, 'sent']
-                });
-                console.log(`[Send API] Email log created: ${logId}`);
-            } catch (logError: any) {
-                console.error('[Send API] Failed to log email:', logError.message);
-                // Try fallback without templateId
-                try {
-                    await db.execute({
-                        sql: 'INSERT INTO email_logs (id, userId, lead_id, status) VALUES (?, ?, ?, ?)',
-                        args: [logId, session.id, leadId, 'sent']
-                    });
-                } catch (e) { }
-            }
-
-            // 2. Update SMTP Usage (Critical for limit tracking)
-            try {
-                const slot = Number(smtp.slot);
-                const smtpUpdate = await db.execute({
+                },
+                {
                     sql: 'UPDATE smtp_settings SET dailySent = dailySent + 1, lastSentAt = CURRENT_TIMESTAMP WHERE userId = ? AND slot = ?',
-                    args: [session.id, slot]
-                });
-                console.log(`[Send API] SMTP usage updated. Rows affected: ${smtpUpdate.rowsAffected}`);
-            } catch (smtpError: any) {
-                console.error('[Send API] Failed to update SMTP usage:', smtpError.message);
-            }
-
-            // 3. Update Lead Status (Critical for UI)
-            try {
-                // First try with userId for security
-                let leadUpdate = await db.execute({
+                    args: [session.id, smtp.slot]
+                },
+                {
                     sql: 'UPDATE leads SET status = ? WHERE id = ? AND userId = ?',
                     args: ['sent', leadId, session.id]
-                });
-
-                // If 0 rows affected, it might be a userId mismatch in the DB
-                if (leadUpdate.rowsAffected === 0) {
-                    console.warn(`[Send API] Lead status update affected 0 rows with userId ${session.id}. Retrying without userId filter.`);
-                    leadUpdate = await db.execute({
-                        sql: 'UPDATE leads SET status = ? WHERE id = ?',
-                        args: ['sent', leadId]
-                    });
                 }
-                console.log(`[Send API] Lead status updated to "sent". Rows affected: ${leadUpdate.rowsAffected}`);
-            } catch (leadError: any) {
-                console.error('[Send API] Failed to update lead status:', leadError.message);
-            }
+            ], 'write');
+
+            // Add a notification for certain intervals or success
+            const notifId = uuidv4();
+            await db.execute({
+                sql: 'INSERT INTO notifications (id, userId, title, message, type) VALUES (?, ?, ?, ?, ?)',
+                args: [notifId, session.id, 'Email Sent', `Email sent successfully to lead ID ${leadId}`, 'success']
+            });
 
             // 4. Update analytics (Global dashboard view)
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                await db.execute({
-                    sql: `INSERT INTO analytics (userId, date, sent) VALUES (?, ?, 1) 
-                          ON CONFLICT(userId, date) DO UPDATE SET sent = sent + 1`,
-                    args: [session.id, today]
-                });
-                console.log(`[Send API] Analytics updated for ${session.id} on ${today}`);
-            } catch (analyticsError: any) {
-                console.error('[Send API] Analytics update failed:', analyticsError.message);
-            }
-
-            // 5. Add Notification
-            try {
-                await db.execute({
-                    sql: 'INSERT INTO notifications (id, userId, title, message, type) VALUES (?, ?, ?, ?, ?)',
-                    args: [uuidv4(), session.id, 'Email Sent', `Email sent successfully to lead.`, 'success']
-                });
-            } catch (e) { }
-
-        } catch (dbError: any) {
-            console.error('Serious database error during send:', dbError.message);
+            const today = new Date().toISOString().split('T')[0];
+            await db.execute({
+                sql: `INSERT INTO analytics (userId, date, sent) VALUES (?, ?, 1) 
+              ON CONFLICT(userId, date) DO UPDATE SET sent = sent + 1`,
+                args: [session.id, today]
+            });
+        } catch (dbError) {
+            console.error('Database update failed during send:', dbError);
         }
 
         return NextResponse.json({ success: true, logId });

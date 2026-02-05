@@ -37,7 +37,6 @@ interface LeadsTableProps {
   onPageChange?: (offset: number) => void
   onSearch?: (search: string) => void
   onDelete?: (id: string) => void
-  onBulkDelete?: (ids: string[]) => void
 }
 
 const statusConfig: Record<
@@ -90,8 +89,7 @@ export function LeadsTable({
   pagination,
   onPageChange,
   onSearch,
-  onDelete,
-  onBulkDelete
+  onDelete
 }: LeadsTableProps) {
   const [search, setSearch] = React.useState('')
   const [industryFilter, setIndustryFilter] = React.useState<string[]>([])
@@ -113,20 +111,11 @@ export function LeadsTable({
   const currentPage = Math.floor(offset / limit) + 1
   const totalPages = Math.ceil(total / limit)
 
-  const isAllCurrentPageSelected = leads.length > 0 && leads.every(l => selectedLeads.includes(l.id))
-
   const toggleSelectAll = () => {
-    if (isAllCurrentPageSelected) {
-      // Deselect all on current page
-      const currentPageIds = leads.map(l => l.id)
-      setSelectedLeads(prev => prev.filter(id => !currentPageIds.includes(id)))
+    if (selectedLeads.length === leads.length) {
+      setSelectedLeads([])
     } else {
-      // Select all on current page
-      const currentPageIds = leads.map(l => l.id)
-      setSelectedLeads(prev => {
-        const uniqueIds = new Set([...prev, ...currentPageIds])
-        return Array.from(uniqueIds)
-      })
+      setSelectedLeads(leads.map((l) => l.id))
     }
   }
 
@@ -168,21 +157,6 @@ export function LeadsTable({
           />
         </div>
         <div className="flex items-center gap-2">
-          {selectedLeads.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                if (confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) {
-                  onBulkDelete?.(selectedLeads)
-                  setSelectedLeads([])
-                }
-              }}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Selected ({selectedLeads.length})
-            </Button>
-          )}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn(hasActiveFilters && 'border-primary text-primary')}>
@@ -251,7 +225,10 @@ export function LeadsTable({
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-12">
                 <Checkbox
-                  checked={isAllCurrentPageSelected}
+                  checked={
+                    leads.length > 0 &&
+                    selectedLeads.length === leads.length
+                  }
                   onCheckedChange={toggleSelectAll}
                   aria-label="Select all"
                 />

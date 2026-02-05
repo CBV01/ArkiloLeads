@@ -1,0 +1,9 @@
+@echo off
+echo Adding changes...
+git add .
+echo Committing changes...
+git commit -m "Update latest changes"
+echo Pushing to GitHub...
+git push
+echo Done!
+pause
