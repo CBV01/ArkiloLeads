@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { encrypt } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
+
 export async function POST(req: Request) {
     try {
         const { password } = await req.json();

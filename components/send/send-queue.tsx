@@ -84,6 +84,10 @@ export function SendQueue({
   const currentTemplates = templates.length > 0 ? templates : [placeholderTemplate]
 
   const initialTemplateId = currentTemplates.length > 0 ? currentTemplates[0].id : placeholderTemplate.id
+  const [activeGenericTemplateId, setActiveGenericTemplateId] = React.useState<string>(
+    (currentTemplates.find(t => t.id === 'tpl_generic') || currentTemplates[0]).id
+  )
+
   const [selectedIds, setSelectedIds] = React.useState<string[]>(selectedLeadIds || [])
   const [isSending, setIsSending] = React.useState(false)
   const [sendingStatus, setSendingStatus] = React.useState<{ [id: string]: 'pending' | 'sending' | 'sent' | 'failed' }>({})
@@ -160,7 +164,17 @@ export function SendQueue({
           }
 
           const playbook = playbooks.find((p: Playbook) => p.industry === lead.industry)
-          const templateIdToUse = playbook ? 'tpl_playbook' : 'tpl_generic'
+
+          // Logic: If playbook exists, use playbook template. Else use selected generic template.
+          let templateIdToUse = '';
+          if (playbook) {
+            // Try to find a template dedicated to playbooks, or fall back to generic
+            const playbookTpl = currentTemplates.find(t => t.id === 'tpl_playbook');
+            templateIdToUse = playbookTpl ? playbookTpl.id : activeGenericTemplateId;
+          } else {
+            templateIdToUse = activeGenericTemplateId;
+          }
+
           const template = currentTemplates.find(t => t.id === templateIdToUse) || currentTemplates[0]
 
           const playbookPlaceholder = '[Problem paragraph either generic or playbook-driven]';
@@ -332,10 +346,34 @@ export function SendQueue({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg bg-primary/5 border border-primary/10 p-4">
+            <div className="rounded-lg bg-primary/5 border border-primary/10 p-4 mb-4">
               <p className="text-sm font-medium text-primary mb-1">PLD Powered Logic</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Automatically selects templates based on lead industry match.
+                Automatically uses playbook templates when a match is found.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Generic Fallback Template
+              </label>
+              <Select
+                value={activeGenericTemplateId}
+                onValueChange={setActiveGenericTemplateId}
+              >
+                <SelectTrigger className="bg-background border-border">
+                  <SelectValue placeholder="Select fallback template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currentTemplates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground px-1">
+                Used for leads that don't match any active playbook.
               </p>
             </div>
           </CardContent>

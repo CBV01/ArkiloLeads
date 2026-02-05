@@ -13,6 +13,8 @@ const statusConfig: Record<
 > = {
   pending: { label: 'Pending', className: 'bg-muted text-muted-foreground border border-border' },
   sent: { label: 'Sent', className: 'bg-success/10 text-success border border-success/30' },
+  opened: { label: 'Opened', className: 'bg-blue-500/10 text-blue-500 border border-blue-500/30' },
+  clicked: { label: 'Clicked', className: 'bg-purple-500/10 text-purple-500 border border-purple-500/30' },
   replied: { label: 'Replied', className: 'bg-replied/10 text-replied border border-replied/30' },
   failed: { label: 'Failed', className: 'bg-destructive/10 text-destructive border border-destructive/30' },
 }

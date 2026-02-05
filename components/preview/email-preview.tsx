@@ -142,6 +142,8 @@ export function EmailPreview({
 
   const [playbookMode, setPlaybookMode] = React.useState<string>('auto')
 
+  const [manualTemplateId, setManualTemplateId] = React.useState<string | null>(null)
+
   // Use real data or placeholders
   const currentLeads = leads.length > 0 ? leads : [placeholderLead]
   const currentTemplates = templates.length > 0 ? templates : [placeholderTemplate]
@@ -155,10 +157,15 @@ export function EmailPreview({
       ? playbooks.find((p) => p.id === playbookMode)
       : null
 
-  // PLD Logic: Template 2 if Playbook, Template 1 if No Playbook
+  // PLD Logic: Template 2 if Playbook, Manual/Generic if No Playbook
+  // If playbook -> Enforce 'tpl_playbook' (or whatever playbook logic exists)
+  // If NO playbook -> Use Manual selection OR Fallback to 'tpl_generic' OR first template
   const templateToUse = selectedPlaybook
     ? (currentTemplates.find(t => t.id === 'tpl_playbook') || currentTemplates[0])
-    : (currentTemplates.find(t => t.id === 'tpl_generic') || currentTemplates[0])
+    : (manualTemplateId
+      ? currentTemplates.find(t => t.id === manualTemplateId)
+      : (currentTemplates.find(t => t.id === 'tpl_generic') || currentTemplates[0])
+    ) || currentTemplates[0]
 
   const selectedTemplate = templateToUse
 
@@ -267,13 +274,38 @@ export function EmailPreview({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-2 rounded-md bg-muted/50 border border-border">
-              <span className="text-sm font-medium">{selectedTemplate.name}</span>
-              <Badge variant="outline" className="text-[10px] uppercase">Auto</Badge>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2 px-1">
-              Template switched automatically based on playbook selection.
-            </p>
+            {selectedPlaybook ? (
+              <>
+                <div className="flex items-center justify-between p-2 rounded-md bg-muted/50 border border-border">
+                  <span className="text-sm font-medium">{selectedTemplate.name}</span>
+                  <Badge variant="outline" className="text-[10px] uppercase">Auto</Badge>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 px-1">
+                  Template switched automatically based on playbook selection.
+                </p>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Select
+                  value={selectedTemplate.id}
+                  onValueChange={(val) => setManualTemplateId(val)}
+                >
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentTemplates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground px-1">
+                  Select which template to use for this lead (no playbook detected).
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

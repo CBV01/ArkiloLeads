@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 export async function POST(req: Request) {
     try {
         const { email, password } = await req.json();
+        console.log(`[AUTH_DEBUG] Login attempt for: ${email}`);
 
         if (!email || !password) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
@@ -19,8 +20,40 @@ export async function POST(req: Request) {
 
         const user = result.rows[0];
 
-        if (!user || !(await bcrypt.compare(password, user.password as string))) {
+        if (!user) {
+            console.log(`[AUTH_DEBUG] User not found: ${email}`);
+        } else {
+            console.log(`[AUTH_DEBUG] User found: ${user.email} (ID: ${user.id})`);
+        }
+
+        let isValid = false;
+        let needsMigration = false;
+
+        if (user) {
+            // 1. Try bcrypt compare (standard secure way)
+            const isMatch = await bcrypt.compare(password, user.password as string);
+            console.log(`[AUTH_DEBUG] Bcrypt comparison result: ${isMatch}`);
+            if (isMatch) {
+                isValid = true;
+            }
+            // 2. Fallback: Try plain text comparison (for legacy users)
+            else if (password === user.password) {
+                isValid = true;
+                needsMigration = true;
+            }
+        }
+
+        if (!isValid) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        }
+
+        if (needsMigration) {
+            // Upgrade user to bcrypt
+            const hashedPassword = await bcrypt.hash(password, 10);
+            await db.execute({
+                sql: 'UPDATE users SET password = ? WHERE id = ?',
+                args: [hashedPassword, user.id]
+            });
         }
 
         if (user.status === 'paused') {

@@ -69,7 +69,7 @@ function AdminLoginForm() {
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4 pt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="password text-zinc-300">Administrative Password</Label>
+                        <Label htmlFor="password" className="text-zinc-300">Administrative Password</Label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500" />
                             <Input
