@@ -48,24 +48,83 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
     }
   }
 
-  const mapLeads = (data: any[]) => {
-    return data.map((row: any) => {
-      // Create a normalized row with lowercase keys
-      const normalizedRow: any = {};
-      Object.keys(row).forEach(key => {
-        normalizedRow[key.toLowerCase().trim().replace(/[\s_]+/g, '')] = row[key];
-      });
+  const processRawData = (rows: any[][]) => {
+    if (rows.length === 0) return []
 
-      return {
-        firstName: normalizedRow['firstname'] || normalizedRow['first'] || normalizedRow['fname'] || '',
-        lastName: normalizedRow['lastname'] || normalizedRow['last'] || normalizedRow['lname'] || '',
-        email: normalizedRow['email'] || normalizedRow['e-mail'] || normalizedRow['mail'] || '',
-        company: normalizedRow['company'] || normalizedRow['companyname'] || normalizedRow['business'] || normalizedRow['org'] || '',
-        city: normalizedRow['city'] || normalizedRow['location'] || normalizedRow['town'] || '',
-        industry: normalizedRow['industry'] || normalizedRow['sector'] || normalizedRow['category'] || 'Unknown',
-        country: normalizedRow['country'] || normalizedRow['nation'] || '',
-      };
-    }).filter(lead => lead.email && lead.firstName);
+    // 1. Identify Headers
+    const firstRow = rows[0].map(cell => String(cell || '').toLowerCase().trim())
+
+    // Check if the first row looks like headers (contains 'email')
+    const emailHeaderIndex = firstRow.findIndex(cell =>
+      cell === 'email' || cell === 'e-mail' || cell === 'mail' || cell === 'email address'
+    )
+
+    let headers: string[] = []
+    let dataRows = []
+
+    if (emailHeaderIndex !== -1) {
+      // Case A: Headers found
+      headers = firstRow
+      dataRows = rows.slice(1)
+    } else {
+      // Case B: No headers found (or header row is missing specific 'email' key)
+      // Check if data looks like emails
+      const hasEmailLikeData = rows.slice(0, 5).some(row =>
+        row.some(cell => String(cell).includes('@') && String(cell).includes('.'))
+      )
+
+      if (hasEmailLikeData) {
+        // Treat as headerless. Try to find which column is email.
+        const sampleRow = rows[0]
+        const emailColIdx = sampleRow.findIndex(cell => String(cell).includes('@'))
+
+        if (emailColIdx !== -1) {
+          headers = []
+          headers[emailColIdx] = 'email'
+          // If we are guessing, we ONLY strictly trust the email column.
+          // We can't safely guess 'First Name' or 'Company' without headers.
+          dataRows = rows
+        }
+      }
+    }
+
+    if (headers.length === 0) return []
+
+    // 2. Map Data
+    return dataRows.map((row) => {
+      const lead: any = {
+        email: '',
+        firstName: '',
+        lastName: '',
+        company: '',
+        city: '',
+        industry: 'Unknown',
+        country: ''
+      }
+
+      row.forEach((cell, index) => {
+        const header = headers[index]
+        if (!header) return
+
+        const value = String(cell || '').trim()
+        const key = header.replace(/[\s_]+/g, '') // remove spaces/underscores
+
+        if (key === 'email' || key === 'e-mail' || key === 'mail' || key === 'emailaddress') lead.email = value
+        else if (key === 'firstname' || key === 'first' || key === 'fname' || key === 'name') {
+          // Simple 'name' header handling: split if full name? 
+          // For now, assume 'name' maps to firstName if lastName is empty, or handle 'fullname' logic if needed.
+          // keeping it simple as per original logic extended.
+          lead.firstName = value
+        }
+        else if (key === 'lastname' || key === 'last' || key === 'lname') lead.lastName = value
+        else if (key === 'company' || key === 'companyname' || key === 'business' || key === 'org') lead.company = value
+        else if (key === 'city' || key === 'location' || key === 'town') lead.city = value
+        else if (key === 'industry' || key === 'sector' || key === 'category') lead.industry = value
+        else if (key === 'country' || key === 'nation') lead.country = value
+      })
+
+      return lead
+    }).filter(lead => lead.email && lead.email.includes('@'))
   }
 
   const handleFileUpload = (file: File) => {
@@ -75,55 +134,55 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
 
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
 
+    // Helper to finish upload
+    const finish = (rawRows: any[][]) => {
+      try {
+        const leads = processRawData(rawRows)
+        setParsedLeads(leads)
+        setIsUploading(false)
+        setIsUploaded(true)
+
+        if (leads.length > 0) {
+          toast.success(`Found ${leads.length} leads in ${file.name}`, { id: toastId })
+        } else {
+          toast.error(`No valid leads found in ${file.name}.`, {
+            id: toastId,
+            duration: 5000
+          })
+        }
+      } catch (error) {
+        console.error('Processing error:', error)
+        toast.error('Failed to process file data', { id: toastId })
+        setIsUploading(false)
+        clearFile()
+      }
+    }
+
     if (isExcel) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = (e) => {
         try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const json = XLSX.utils.sheet_to_json(worksheet);
-
-          const leads = mapLeads(json);
-          setParsedLeads(leads);
-          setIsUploading(false);
-          setIsUploaded(true);
-
-          if (leads.length > 0) {
-            toast.success(`Found ${leads.length} leads in ${file.name}`, { id: toastId });
-          } else {
-            toast.error(`No valid leads found in ${file.name}. Ensure you have 'First Name' and 'Email' columns.`, {
-              id: toastId,
-              duration: 5000
-            });
-          }
+          const data = e.target?.result
+          const workbook = XLSX.read(data, { type: 'binary' })
+          const firstSheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[firstSheetName]
+          // Use header: 1 to get array of arrays
+          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+          finish(json)
         } catch (error) {
-          console.error('Excel parse error:', error);
-          toast.error('Failed to parse Excel file', { id: toastId });
-          setIsUploading(false);
-          clearFile();
+          console.error('Excel parse error:', error)
+          toast.error('Failed to parse Excel file', { id: toastId })
+          setIsUploading(false)
+          clearFile()
         }
-      };
-      reader.readAsBinaryString(file);
+      }
+      reader.readAsBinaryString(file)
     } else {
       Papa.parse(file, {
-        header: true,
+        header: false, // Parsing as array of arrays
         skipEmptyLines: true,
         complete: (results) => {
-          const leads = mapLeads(results.data);
-          setParsedLeads(leads)
-          setIsUploading(false)
-          setIsUploaded(true)
-
-          if (leads.length > 0) {
-            toast.success(`Found ${leads.length} leads in ${file.name}`, { id: toastId })
-          } else {
-            toast.error(`No valid leads found in ${file.name}. Ensure you have 'First Name' and 'Email' columns.`, {
-              id: toastId,
-              duration: 5000
-            })
-          }
+          finish(results.data as any[][])
         },
         error: (error) => {
           console.error('Error parsing CSV:', error)
@@ -182,7 +241,7 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-semibold">Upload Leads</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Import leads from CSV files (Required: First Name, Email)
+          Import leads from CSV, Excel, or Text files (Required: Email)
         </p>
       </CardHeader>
       <CardContent>
@@ -201,7 +260,7 @@ export function CsvUpload({ onSuccess }: CsvUploadProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls,.txt"
             onChange={handleFileSelect}
             className="absolute inset-0 cursor-pointer opacity-0"
           />

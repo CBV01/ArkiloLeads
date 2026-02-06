@@ -8,6 +8,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -294,11 +297,32 @@ export function EmailPreview({
                     <SelectValue placeholder="Select template" />
                   </SelectTrigger>
                   <SelectContent>
-                    {currentTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
+                    {currentTemplates.filter(t => t.userId).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>My Templates</SelectLabel>
+                        {currentTemplates.filter(t => t.userId).map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+
+                    {currentTemplates.filter(t => t.userId).length > 0 &&
+                      currentTemplates.filter(t => !t.userId).length > 0 && (
+                        <SelectSeparator />
+                      )}
+
+                    {currentTemplates.filter(t => !t.userId).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>System Templates</SelectLabel>
+                        {currentTemplates.filter(t => !t.userId).map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground px-1">

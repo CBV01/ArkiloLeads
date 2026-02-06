@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const seenInBatch = new Set(); // Prevent duplicates within the same CSV
 
         for (const lead of incomingLeads) {
-            if (!lead.email || !lead.firstName) continue;
+            if (!lead.email) continue;
 
             const emailLower = lead.email.toLowerCase();
             if (existingEmails.has(emailLower) || seenInBatch.has(emailLower)) {
